@@ -1,45 +1,440 @@
-# Step-by-Step Guide: Hosting Your Pomodoro Timer on GitHub Pages with Custom Domain Verification
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pomodoro • Timer + Sessions Log</title>
+<style>
+  :root{
+    /* Greener, energetic palette */
+    --bg:#e6f7d7;            /* fresh light green */
+    --ink:#143a2a;           /* deep green text */
+    --muted:#4b6b4d;         /* muted green */
+    --panel:#ffffffcc;       /* glassy white */
 
-## 1. Prepare Your Files
-1. Save your Pomodoro app code as a file named `index.html`.
-2. Make sure all your code (HTML, CSS, and JS) is inside that file.
+    /* Working accent pairs (copied into --accent / --accent-2 at runtime) */
+    --accent-work:#25a244;   /* work primary */
+    --accent-work-2:#7cd67f; /* work secondary */
+    --accent-break:#2bb673;  /* break primary */
+    --accent-break-2:#a2f3b4;/* break secondary */
 
-## 2. Create a GitHub Repository
-1. Go to [github.com](https://github.com) and log in.
-2. Click **New** to create a new repository.
-3. Name it (e.g., `pomodoro-timer`).
-4. Set it to **Public**.
-5. Click **Create repository**.
+    --accent: var(--accent-work);
+    --accent-2: var(--accent-work-2);
 
-## 3. Upload Your App
-1. Inside the repository, click **Add file → Upload files**.
-2. Drag and drop your `index.html` file.
-3. Commit the changes.
+    --danger:#e05d5d;
+    --ring:#6fbf73;          /* ring green */
+    --shadow:0 10px 30px rgba(0,0,0,.12);
+  }
+  .dark{
+    --bg:#0d2016;            /* deep dark green */
+    --ink:#e9f5ec;
+    --muted:#a5c9a5;
+    --panel:#0d1714cc;
 
-## 4. Enable GitHub Pages
-1. Go to your repository’s **Settings → Pages**.
-2. Under **Source**, select the `main` branch and `/ (root)` folder.
-3. Save.
+    --accent-work:#4fc97a;    
+    --accent-work-2:#9ef2b1;  
+    --accent-break:#3dd3a4;   
+    --accent-break-2:#b5ffe1; 
 
-## 5. Verify Your Custom Domain (Optional but Recommended)
-If you want to use `yourdomain.com`:
-1. In **Settings → Pages**, add your custom domain.
-2. GitHub will show you a verification prompt like in your screenshot.
-3. Go to your domain registrar’s DNS settings.
-4. Create a **TXT** record:
-   - **Host/Name**: `_github-pages-challenge-<your-username>` (exact from GitHub)
-   - **Value**: the long code provided by GitHub
-   - **TTL**: default or 1 hour
-5. Save changes.
-6. Wait for DNS propagation (can be a few minutes to 24h).
-7. Return to GitHub and click **Verify**.
+    --accent: var(--accent-work);
+    --accent-2: var(--accent-work-2);
 
-## 6. Point Your Domain to GitHub Pages
-1. Add a **CNAME** record:
-   - **Host/Name**: `@` (for root) or `www` (for subdomain)
-   - **Value/Points to**: `<your-username>.github.io`
-2. Save and wait for DNS propagation.
-3. In GitHub Pages settings, enable **Enforce HTTPS**.
+    --danger:#ff7b7b;
+    --ring:#2f5d4c;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font:16px/1.4 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    color:var(--ink); background:var(--bg); position:relative; overflow-x:hidden;
+  }
 
-## 7. Access Your App
-- Your Pomodoro timer will now load from your custom domain with HTTPS.
+  header{
+    position:sticky; top:0; z-index:10; backdrop-filter:saturate(1.2) blur(6px);
+    background:linear-gradient(0deg, transparent, var(--panel));
+  }
+  .bar{display:flex; align-items:center; gap:14px; justify-content:space-between; padding:14px 20px; max-width:1100px; margin:0 auto}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
+  .logo .mark{width:34px; height:34px; border-radius:10px; background:conic-gradient(from 180deg, var(--accent) 0 70%, var(--accent-2) 70% 100%); box-shadow:var(--shadow); display:grid; place-items:center}
+  .logo .mark svg{width:20px; height:20px; fill:#0a1412}
+  .pills{display:flex; align-items:center; gap:10px}
+  .pill{display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:var(--panel); box-shadow:var(--shadow); color:var(--ink)}
+  .pill input[type="checkbox"]{accent-color:var(--accent)}
+
+  main{max-width:1100px; margin:22px auto 40px; padding:0 20px}
+  .grid{display:grid; grid-template-columns:1.05fr .95fr; gap:24px}
+  @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--panel); border-radius:20px; box-shadow:var(--shadow); padding:18px}
+  .title{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  h2{margin:0; font-size:18px; letter-spacing:.3px}
+  .tag{font-size:12px; opacity:.75}
+
+  .timer{display:grid; justify-items:center; gap:12px; padding:8px 6px 14px}
+  .rings{position:relative; width:270px; height:270px}
+  .rings svg{transform:rotate(-90deg)}
+  .fancy{font-weight:900; font-size:58px; letter-spacing:1px}
+  .sub{color:var(--muted); font-weight:600; font-size:14px}
+  .controls{display:flex; flex-wrap:wrap; justify-content:center; gap:10px}
+  button{border:0; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; background:var(--ink); color:var(--bg); box-shadow:var(--shadow); transition:transform .05s ease, filter .15s ease}
+  button:hover{filter:brightness(1.05)}
+  button:active{transform:translateY(1px)}
+  .ghost{background:transparent; color:var(--ink); border:2px solid var(--ring)}
+  .danger{background:var(--danger)}
+
+  .grid-2{display:grid; grid-template-columns:repeat(2, 1fr); gap:12px}
+  .grid-3{display:grid; grid-template-columns:repeat(3, 1fr); gap:12px}
+  .stack{display:grid; gap:10px}
+  label{font-size:12px; color:var(--muted)}
+  input[type="number"], input[type="text"]{width:100%; padding:9px 10px; border-radius:10px; border:1px solid var(--ring); background:transparent; color:var(--ink)}
+  .row{display:flex; align-items:center; justify-content:space-between}
+  .switch{display:flex; align-items:center; gap:8px}
+
+  .log{max-height:260px; overflow:auto; border-top:1px dashed var(--ring); padding-top:10px;}
+  .log li{display:grid; grid-template-columns:auto 1fr auto; gap:10px; padding:7px 0; border-bottom:1px dashed color-mix(in oklab, var(--ring) 75%, transparent); align-items:center}
+  .badge{padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700; background:color-mix(in oklab, var(--accent) 80%, white 20%); color:#0a1412}
+  .badge.break{background:color-mix(in oklab, var(--accent-2) 87%, white 13%)}
+
+  /* Charts */
+  .chart{width:100%; height:220px; background:linear-gradient(180deg, color-mix(in oklab, var(--accent) 18%, transparent), transparent 40%); border-radius:14px; overflow:hidden;}
+  .chart svg{width:100%; height:100%}
+  .chart .cap{font-size:12px; fill:var(--muted)}
+
+  footer{max-width:1100px; margin:20px auto 40px; padding:0 20px;}
+  .foot{background:linear-gradient(0deg, var(--ink), color-mix(in oklab, var(--ink) 85%, transparent)); color:var(--bg); border-radius:20px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between}
+  .foot small{opacity:.8}
+
+  .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+</style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="logo" aria-label="Pomodoro home">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M12 2a8 8 0 0 0-8 8c0 3.9 2.8 7 6.4 7.8l-.9 2.2a1 1 0 1 0 1.8.7l1-2.4 1 2.4a1 1 0 0 0 1.8-.7l-.9-2.2A8 8 0 0 0 20 10a8 8 0 0 0-8-8zm0 2a6 6 0 0 1 6 6c0 3.3-2.7 6-6 6s-6-2.7-6-6a6 6 0 0 1 6-6z"/></svg>
+        </div>
+        <span>POMODORO</span>
+      </div>
+      <div class="pills">
+        <label class="pill"><input id="autoStart" type="checkbox"/> Auto‑start</label>
+        <label class="pill"><input id="soundOn" type="checkbox" checked/> Beep</label>
+        <label class="pill"><input id="darkToggle" type="checkbox"/> Dark</label>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- Timer & Controls -->
+      <section class="card">
+        <div class="title">
+          <h2>Focus Timer</h2>
+          <span class="tag" id="cycleTag">Work</span>
+        </div>
+        <div class="timer">
+          <div class="rings">
+            <svg viewBox="0 0 120 120" width="270" height="270">
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="var(--accent)"/>
+                  <stop offset="100%" stop-color="var(--accent-2)"/>
+                </linearGradient>
+              </defs>
+              <circle cx="60" cy="60" r="54" fill="none" stroke="var(--ring)" stroke-width="8" opacity=".35"/>
+              <circle id="arc" cx="60" cy="60" r="54" fill="none" stroke="url(#grad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 999"/>
+            </svg>
+            <div class="sr" aria-live="polite" id="live"></div>
+          </div>
+          <div class="fancy" id="time">25:00</div>
+          <div class="sub" id="sessionLabel">Work session</div>
+          <div class="controls">
+            <button id="startBtn">Start</button>
+            <button id="pauseBtn" class="ghost">Pause</button>
+            <button id="resetBtn" class="danger">Reset</button>
+            <button id="skipBtn" class="ghost">Skip</button>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="stack"><label>Work (min)</label><input id="workMin" type="number" min="1" value="25"></div>
+          <div class="stack"><label>Break (min)</label><input id="breakMin" type="number" min="1" value="5"></div>
+          <div class="stack"><label>Long break (min)</label><input id="longMin" type="number" min="1" value="15"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="switch"><input id="everyN" type="number" min="2" value="4" style="width:64px"> <label>Work sessions per long break</label></div>
+          <div class="switch"><button id="applyDur" class="ghost">Apply</button><button id="preset" title="25/5/15 classic" style="margin-left:8px">Classic 25‑5</button></div>
+        </div>
+      </section>
+
+      <!-- Charts -->
+      <section class="card">
+        <div class="title"><h2>Session Analytics</h2><span class="tag" id="statsTag">—</span></div>
+        <div class="chart" id="lineChart" aria-label="Line chart of last sessions"></div>
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card" style="padding:12px">
+            <h2 style="margin-bottom:6px">Work vs Break</h2>
+            <div id="donut" class="chart" style="height:180px"></div>
+          </div>
+          <div class="card" style="padding:12px">
+            <h2 style="margin-bottom:6px">Today</h2>
+            <div id="todayTotals" class="chart" style="height:180px"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Log -->
+    <section class="card" style="margin-top:20px">
+      <div class="title"><h2>Sessions Log</h2><button id="clearLog" class="ghost">Clear</button></div>
+      <ol id="log" class="log" aria-live="polite"></ol>
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot">
+      <div><strong>Pomodoro</strong> — branding‑inspired focus. <small>Auto‑saves settings & history in your browser.</small></div>
+      <small>©2025</small>
+    </div>
+  </footer>
+
+<script>
+(() => {
+  /* --- State & Settings --- */
+  const $ = s => document.querySelector(s);
+  const pad = n => String(n).padStart(2,'0');
+
+  const settings = JSON.parse(localStorage.getItem('pomodoroSettings')||'{}');
+  const state = {
+    kind: 'work', // 'work' | 'break' | 'long'
+    running: false,
+    remaining: 25*60,
+    total: 25*60,
+    workMin: settings.workMin ?? 25,
+    breakMin: settings.breakMin ?? 5,
+    longMin: settings.longMin ?? 15,
+    everyN: settings.everyN ?? 4,
+    autoStart: settings.autoStart ?? false,
+    beep: settings.beep ?? true,
+    completedWorks: 0,
+    tickId: null
+  };
+
+  /* Elements */
+  const timeEl = $('#time');
+  const arc = $('#arc');
+  const label = $('#sessionLabel');
+  const cycleTag = $('#cycleTag');
+  const live = $('#live');
+
+  /* Controls */
+  const startBtn = $('#startBtn');
+  const pauseBtn = $('#pauseBtn');
+  const resetBtn = $('#resetBtn');
+  const skipBtn = $('#skipBtn');
+  const applyDur = $('#applyDur');
+  const preset = $('#preset');
+
+  /* Inputs */
+  const workMin = $('#workMin');
+  const breakMin = $('#breakMin');
+  const longMin = $('#longMin');
+  const everyN = $('#everyN');
+  const autoStart = $('#autoStart');
+  const soundOn = $('#soundOn');
+  const darkToggle = $('#darkToggle');
+
+  /* Log & charts */
+  const logEl = $('#log');
+  const statsTag = $('#statsTag');
+
+  // Apply settings to UI
+  workMin.value = state.workMin; breakMin.value = state.breakMin; longMin.value = state.longMin; everyN.value = state.everyN;
+  autoStart.checked = state.autoStart; soundOn.checked = state.beep;
+
+  // Dark mode
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const savedDark = localStorage.getItem('pomodoroDark');
+  const dark = savedDark !== null ? savedDark === '1' : prefersDark;
+  if(dark) document.body.classList.add('dark');
+  darkToggle.checked = document.body.classList.contains('dark');
+  darkToggle.addEventListener('change', () => {
+    document.body.classList.toggle('dark', darkToggle.checked);
+    localStorage.setItem('pomodoroDark', darkToggle.checked ? '1':'0');
+  });
+
+  /* --- Timer --- */
+  function format(sec){ const m = Math.floor(sec/60), s = Math.floor(sec%60); return `${pad(m)}:${pad(s)}` }
+  function setRing(){
+    const R = 54, C = 2*Math.PI*R; // circumference
+    const p = Math.max(0, Math.min(1, 1 - (state.remaining/state.total)));
+    arc.setAttribute('stroke-dasharray', `${p*C} ${C}`);
+  }
+  function update(){ timeEl.textContent = format(state.remaining); setRing(); live.textContent = `${state.kind} ${format(state.remaining)}` }
+
+  function setAccentsForKind(){
+    // Copy pair into --accent / --accent-2 so gradients & UI update
+    const root = document.documentElement.style;
+    if(state.kind==='work'){
+      root.setProperty('--accent', getComputedStyle(document.body).getPropertyValue('--accent-work'));
+      root.setProperty('--accent-2', getComputedStyle(document.body).getPropertyValue('--accent-work-2'));
+    } else {
+      root.setProperty('--accent', getComputedStyle(document.body).getPropertyValue('--accent-break'));
+      root.setProperty('--accent-2', getComputedStyle(document.body).getPropertyValue('--accent-break-2'));
+    }
+  }
+
+  function swap(next){
+    if(next){ state.kind = next; }
+    else{
+      if(state.kind==='work'){
+        state.completedWorks++;
+        state.kind = (state.completedWorks % state.everyN===0) ? 'long' : 'break';
+      } else { state.kind = 'work'; }
+    }
+    const mins = state.kind==='work' ? state.workMin : (state.kind==='break'? state.breakMin : state.longMin);
+    state.total = state.remaining = mins*60;
+    cycleTag.textContent = state.kind==='work'?'Work':(state.kind==='break'?'Break':'Long break');
+    label.textContent = state.kind==='work'?'Work session':(state.kind==='break'?'Short break':'Long break');
+    setAccentsForKind();
+    update();
+  }
+
+  function start(){
+    if(state.running) return; state.running=true; tick(); state.tickId=setInterval(tick, 1000);
+  }
+  function pause(){ state.running=false; clearInterval(state.tickId); }
+  function reset(){ pause(); swap('work'); state.completedWorks=0; }
+
+  function tick(){
+    state.remaining--; update();
+    if(state.remaining<=0){
+      complete();
+    }
+  }
+
+  function complete(){
+    pause();
+    // log
+    const now = new Date();
+    const entry = { t: now.toISOString(), kind: state.kind, seconds: state.total };
+    const sessions = JSON.parse(localStorage.getItem('pomodoroSessions')||'[]');
+    sessions.push(entry); localStorage.setItem('pomodoroSessions', JSON.stringify(sessions));
+    renderLog(); drawCharts();
+    beep();
+    // next
+    const next = state.kind==='work' ? ((state.completedWorks % state.everyN===0)? 'long':'break') : 'work';
+    swap(next);
+    if(state.autoStart) start();
+  }
+
+  /* --- Sound --- */
+  function beep(){ if(!state.beep) return; try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type='sine'; o.frequency.value=880; g.gain.setValueAtTime(.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime+.02); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime+.12); o.stop(ctx.currentTime+.14); ctx.close(); },140); }catch(e){} }
+
+  /* --- Helpers / UI wiring --- */
+  function persist(){ localStorage.setItem('pomodoroSettings', JSON.stringify({ workMin: +workMin.value, breakMin:+breakMin.value, longMin:+longMin.value, everyN:+everyN.value, autoStart:autoStart.checked, beep:soundOn.checked })) }
+
+  // set initial values
+  swap('work');
+
+  startBtn.addEventListener('click', start);
+  pauseBtn.addEventListener('click', pause);
+  resetBtn.addEventListener('click', reset);
+  skipBtn.addEventListener('click', () => complete());
+  applyDur.addEventListener('click', () => { state.workMin=+workMin.value; state.breakMin=+breakMin.value; state.longMin=+longMin.value; state.everyN=+everyN.value; state.autoStart=autoStart.checked; state.beep=soundOn.checked; persist(); swap(state.kind); });
+  preset.addEventListener('click', () => { workMin.value=25; breakMin.value=5; longMin.value=15; everyN.value=4; applyDur.click(); });
+  autoStart.addEventListener('change', () => { state.autoStart=autoStart.checked; persist(); });
+  soundOn.addEventListener('change', () => { state.beep=soundOn.checked; persist(); });
+
+  /* --- Log --- */
+  function renderLog(){
+    const sessions = JSON.parse(localStorage.getItem('pomodoroSessions')||'[]').slice().reverse();
+    logEl.innerHTML = sessions.map(s => {
+      const d = new Date(s.t);
+      const mins = Math.round(s.seconds/60);
+      return `<li><span class="badge ${s.kind!=='work'?'break':''}">${s.kind==='work'?'Work':'Break'}</span><span>${d.toLocaleString()} • ${mins} min</span><span class="tag">${format(s.seconds)}</span></li>`
+    }).join('');
+    statsTag.textContent = `${sessions.length} total sessions`;
+  }
+  $('#clearLog').addEventListener('click', () => { if(confirm('Clear all saved sessions?')){ localStorage.removeItem('pomodoroSessions'); renderLog(); drawCharts(); }});
+
+  /* --- Charts (SVG, no libs) --- */
+  function mount(container, svg){ container.innerHTML=''; container.appendChild(svg); }
+  function SVG(w,h){ const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox',`0 0 ${w} ${h}`); s.setAttribute('width','100%'); s.setAttribute('height','100%'); return s }
+  function el(tag, attrs={}, children=[]) { const n=document.createElementNS('http://www.w3.org/2000/svg',tag); for(const k in attrs) n.setAttribute(k, attrs[k]); children.forEach(c=>n.appendChild(c)); return n }
+
+  function drawLine(){
+    const box = $('#lineChart'); const svg = SVG(600,220);
+    const sessions = JSON.parse(localStorage.getItem('pomodoroSessions')||'[]');
+    const last = sessions.slice(-20); // last 20
+    const pts = last.map((s,i)=>({x:i, y:Math.round(s.seconds/60), kind:s.kind}));
+    const maxY = Math.max(30, ...pts.map(p=>p.y));
+    // axes
+    svg.appendChild(el('path',{d:`M40 10 V200 M40 200 H580`, stroke:'var(--ring)', 'stroke-width':1, opacity:.6 }));
+    // grid lines
+    for(let i=0;i<=5;i++){
+      const y = 200 - i*(180/5); svg.appendChild(el('line',{x1:40,x2:580,y1:y,y2:y,stroke:'var(--ring)', 'stroke-width':1, opacity:.25}))
+      const lab = Math.round(i*maxY/5); svg.appendChild(el('text',{x:6,y:y+4, class:'cap'}, [document.createTextNode(`${lab}m`)]))
+    }
+    if(!pts.length){ svg.appendChild(el('text',{x:120,y:120,class:'cap'},[document.createTextNode('No sessions yet')])) ; mount(box, svg); return }
+    const stepX = 540/Math.max(1, pts.length-1);
+    const path = pts.map((p,i)=>`${i? 'L':'M'} ${40 + i*stepX} ${200 - (p.y/maxY)*180}`).join(' ');
+    // gradient definition
+    const defs = el('defs');
+    defs.appendChild(el('linearGradient',{id:'gradLine', x1:'0%',y1:'0%',x2:'100%',y2:'0%'},[
+      el('stop',{offset:'0%','stop-color':'var(--accent)'}), el('stop',{offset:'100%','stop-color':'var(--accent-2)'})
+    ])); svg.insertBefore(defs, svg.firstChild);
+
+    svg.appendChild(el('path',{d:path, fill:'none', stroke:'url(#gradLine)', 'stroke-width':3, 'stroke-linecap':'round'}));
+    // dots
+    pts.forEach((p,i)=>{
+      const cx = 40 + i*stepX; const cy = 200 - (p.y/maxY)*180;
+      svg.appendChild(el('circle',{cx, cy, r:4, fill: p.kind==='work'?'var(--accent)':'var(--accent-2)'}));
+    })
+    mount(box, svg);
+  }
+
+  function drawDonut(){
+    const box = $('#donut'); const svg = SVG(200,180);
+    const sessions = JSON.parse(localStorage.getItem('pomodoroSessions')||'[]');
+    const w = sessions.filter(s=>s.kind==='work').length; const b = sessions.length-w;
+    const total = Math.max(1, w+b);
+    const r=60, cx=100, cy=90, thick=20;
+    svg.appendChild(el('circle',{cx,cy,r:r, stroke:'var(--ring)','stroke-width':thick, fill:'none', opacity:.35}));
+    let s = -Math.PI/2;
+    function arc(frac,color){ const end = s + frac*2*Math.PI; const d=`M ${cx+r*Math.cos(s)} ${cy+r*Math.sin(s)} A ${r} ${r} 0 ${frac>.5?1:0} 1 ${cx+r*Math.cos(end)} ${cy+r*Math.sin(end)}`; s=end; return el('path',{d, stroke:color, 'stroke-width':thick, fill:'none', 'stroke-linecap':'round'}) }
+    svg.appendChild(arc(w/total, 'var(--accent)'));
+    svg.appendChild(arc(b/total, 'var(--accent-2)'));
+    svg.appendChild(el('text',{x:cx, y:cy+4, 'text-anchor':'middle', class:'cap'}, [document.createTextNode(`${w} work / ${b} break`)]));
+    mount(box, svg);
+  }
+
+  function drawToday(){
+    const box = $('#todayTotals'); const svg = SVG(300,180);
+    const sessions = JSON.parse(localStorage.getItem('pomodoroSessions')||'[]');
+    const today = new Date(); today.setHours(0,0,0,0);
+    let work=0, brk=0;
+    for(const s of sessions){ const d=new Date(s.t); if(d>=today){ if(s.kind==='work') work+=s.seconds; else brk+=s.seconds; }}
+    const data=[{label:'Work', v:Math.round(work/60)},{label:'Break', v:Math.round(brk/60)}];
+    const max = Math.max(30, ...data.map(d=>d.v));
+    const x0=40, y0=160, w=220;
+    // axes
+    svg.appendChild(el('line',{x1:x0,y1:20,x2:x0,y2:y0,stroke:'var(--ring)',opacity:.6}));
+    svg.appendChild(el('line',{x1:x0,y1:y0,x2:x0+w,y2:y0,stroke:'var(--ring)',opacity:.6}));
+    data.forEach((d,i)=>{
+      const bw=60; const gap=40; const x=x0+40+i*(bw+gap); const h=(d.v/max)*120; const y=y0-h;
+      svg.appendChild(el('rect',{x,y, width:bw, height:h, transform:`rotate(-90 ${x} ${y})`, fill: i? 'var(--accent-2)':'var(--accent)'}));
+      svg.appendChild(el('text',{x:x0+40+i*(bw+gap)+bw/2, y:y0+14, 'text-anchor':'middle', class:'cap'},[document.createTextNode(d.label)]));
+      svg.appendChild(el('text',{x:x0+40+i*(bw+gap)+bw/2, y:y0-h-6, 'text-anchor':'middle', class:'cap'},[document.createTextNode(`${d.v}m`)]));
+    });
+    mount(box, svg);
+  }
+
+  function drawCharts(){ drawLine(); drawDonut(); drawToday(); }
+
+  // Initial render
+  renderLog(); drawCharts(); update();
+})();
+</script>
+</body>
+</html>
