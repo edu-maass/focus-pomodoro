@@ -1,0 +1,45 @@
+# Step-by-Step Guide: Hosting Your Pomodoro Timer on GitHub Pages with Custom Domain Verification
+
+## 1. Prepare Your Files
+1. Save your Pomodoro app code as a file named `index.html`.
+2. Make sure all your code (HTML, CSS, and JS) is inside that file.
+
+## 2. Create a GitHub Repository
+1. Go to [github.com](https://github.com) and log in.
+2. Click **New** to create a new repository.
+3. Name it (e.g., `pomodoro-timer`).
+4. Set it to **Public**.
+5. Click **Create repository**.
+
+## 3. Upload Your App
+1. Inside the repository, click **Add file → Upload files**.
+2. Drag and drop your `index.html` file.
+3. Commit the changes.
+
+## 4. Enable GitHub Pages
+1. Go to your repository’s **Settings → Pages**.
+2. Under **Source**, select the `main` branch and `/ (root)` folder.
+3. Save.
+
+## 5. Verify Your Custom Domain (Optional but Recommended)
+If you want to use `yourdomain.com`:
+1. In **Settings → Pages**, add your custom domain.
+2. GitHub will show you a verification prompt like in your screenshot.
+3. Go to your domain registrar’s DNS settings.
+4. Create a **TXT** record:
+   - **Host/Name**: `_github-pages-challenge-<your-username>` (exact from GitHub)
+   - **Value**: the long code provided by GitHub
+   - **TTL**: default or 1 hour
+5. Save changes.
+6. Wait for DNS propagation (can be a few minutes to 24h).
+7. Return to GitHub and click **Verify**.
+
+## 6. Point Your Domain to GitHub Pages
+1. Add a **CNAME** record:
+   - **Host/Name**: `@` (for root) or `www` (for subdomain)
+   - **Value/Points to**: `<your-username>.github.io`
+2. Save and wait for DNS propagation.
+3. In GitHub Pages settings, enable **Enforce HTTPS**.
+
+## 7. Access Your App
+- Your Pomodoro timer will now load from your custom domain with HTTPS.
